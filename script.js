@@ -7,6 +7,10 @@ const MAX_PAGES = 100;
 const START_PAGE = 1;
 
 const parser = new DOMParser();
+
+let allUsers = [];
+let allUsersUnparsedArray = [];
+let forceStop = false;
 var thePage;
 var htmlDoc;
 var check2;
@@ -32,23 +36,18 @@ function sleep(miliseconds) {
    }
 }
 
-// FETLIFE FUNCTIONS
-// END FETLIFE FUNCTIONS
-// JSON.parse(thePage.lastChild.dataset.props).users[0]; 
-
-let allUsers = [];
-let allUsersUnparsedArray = [];
-
 for (var i=START_PAGE; i<(MAX_PAGES + 1); i++) {
-  console.log('about to run page: ' + i);
-  const urlReturn = getURL(i);
-  htmlDoc = parser.parseFromString(urlReturn, 'text/html');
-  thePage = htmlDoc.getElementById('ptr-main-element').getElementsByTagName('main')[0].getElementsByTagName('div')[3];
-  
-  const allUsers = JSON.parse(thePage.lastChild.dataset.props).users;
-  allUsersUnparsedArray.push(allUsers);
-  console.log('finished page: ' + i + ' Sleeping..');
-  sleep(DELAY_BETWEEN_REQUESTS);
+  if (!forceStop) {
+	  console.log('about to run page: ' + i);
+	  const urlReturn = getURL(i);
+	  htmlDoc = parser.parseFromString(urlReturn, 'text/html');
+	  thePage = htmlDoc.getElementById('ptr-main-element').getElementsByTagName('main')[0].getElementsByTagName('div')[3];
+	  
+	  const allUsers = JSON.parse(thePage.lastChild.dataset.props).users;
+	  allUsersUnparsedArray.push(allUsers);
+	  console.log('finished page: ' + i + ' Sleeping..');
+	  sleep(DELAY_BETWEEN_REQUESTS);
+  }
 }
 
 console.log('done getting ' + allUsersUnparsedArray.length + ' pages of people. Now parsing..');
@@ -67,8 +66,6 @@ for (const allUsersUnparsed of allUsersUnparsedArray) {
 
 console.log('DONE. ' + allUsers.length + ' amount of users found.');
 
-
-
 /*
 Get Users who you've messaged by opening 'all mail', and scrolling to the bottom then use this:
 var classNameWithUsername = 'link flex-none text-base font-bold leading-normal text-gray-100 hover:text-gray-50 lg:hidden'
@@ -86,5 +83,4 @@ var query = userNames.map((e) => {
 });
 
 query.join('\r\n');
-
 */
