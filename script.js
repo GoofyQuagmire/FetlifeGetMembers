@@ -93,39 +93,50 @@
     };
   }
 
-  // ── Validation, filtrage et normalisation ────────────────────────
-  function buildUserObject(person) {
-    if (!person || typeof person !== "object") return null;
+// ── Validation, filtrage et normalisation ────────────────────────
+function buildUserObject(person) {
+  if (!person || typeof person !== "object") return null;
 
-    const profileUrl = typeof person.profileUrl === "string" ? person.profileUrl.trim() : "";
-    const username   = typeof person.nickname   === "string" ? person.nickname.trim()   : "";
+  const profileUrl = typeof person.profileUrl === "string" ? person.profileUrl.trim() : "";
+  const username   = typeof person.nickname === "string" ? person.nickname.trim() : "";
 
-    if (!profileUrl.startsWith("/users/") || !username) return null;
+  if (!profileUrl || !username) return null;
 
-    const link = "https://fetlife.com" + profileUrl;
-    if (seenUrls.has(link)) return null;
-    seenUrls.add(link);
+  const link = profileUrl.startsWith("http")
+    ? profileUrl
+    : "https://fetlife.com" + profileUrl;
 
-    const { age, gender, role } = parseIdentity(person.identity);
+  if (seenUrls.has(link)) return null;
+  seenUrls.add(link);
 
-    if (CONFIG.filters.genders.length > 0 && !CONFIG.filters.genders.includes(gender)) return null;
-    if (age !== null && age < CONFIG.filters.minAge) return null;
-    if (age !== null && age > CONFIG.filters.maxAge) return null;
+  const { age, gender, role } = parseIdentity(person.identity);
 
-    return {
-      label:          typeof person.identity === "string" && person.identity.trim()
-                        ? person.identity.trim() : "unknown",
-      link,
-      username,
-      location:       typeof person.location === "string" && person.location.trim()
-                        ? person.location.trim() : "unknown",
-      age:            age ?? "unknown",
-      gender:         gender ?? "unknown",
-      role:           role ?? "unknown",
-      avatarSmallUrl: typeof person.avatarSmallUrl === "string" ? person.avatarSmallUrl.trim() : null,
-      avatarUrl:      typeof person.avatarUrl      === "string" ? person.avatarUrl.trim()      : null,
-    };
-  }
+  if (CONFIG.filters.genders.length > 0 && !CONFIG.filters.genders.includes(gender)) return null;
+  if (age !== null && age < CONFIG.filters.minAge) return null;
+  if (age !== null && age > CONFIG.filters.maxAge) return null;
+
+  return {
+  label: typeof person.identity === "string" && person.identity.trim()
+    ? person.identity.trim()
+    : "unknown",
+  link,
+  username,
+  location: typeof person.location === "string" && person.location.trim()
+    ? person.location.trim()
+    : "unknown",
+  age: age ?? "unknown",
+  gender: gender ?? "unknown",
+  role: role ?? "unknown",
+  avatarSmallUrl: typeof person.avatarSmallUrl === "string" ? person.avatarSmallUrl.trim() : null,
+  avatarUrl: typeof person.avatarUrl === "string" ? person.avatarUrl.trim() : null,
+  avatar:
+    typeof person.avatarSmallUrl === "string" && person.avatarSmallUrl.trim()
+      ? person.avatarSmallUrl.trim()
+      : typeof person.avatarUrl === "string" && person.avatarUrl.trim()
+        ? person.avatarUrl.trim()
+        : null,
+};
+}
 
   // ── Génération de la galerie HTML ────────────────────────────────
   function openGallery(users) {
@@ -136,20 +147,18 @@
       const safeGender   = escapeHtml(u.gender);
       const safeAge      = escapeHtml(u.age);
       const safeLink     = escapeHtml(u.link);
-      const safeAvatar   = escapeHtml(u.avatarSmallUrl ?? "");
+      const safeAvatar   = escapeHtml(u.avatar ?? "");
 
       return `
-        <a href="${safeLink}" target="_blank" rel="noopener noreferrer" class="card">
-          <div class="avatar" style="background-image: url(&quot;${safeAvatar}&quot;)">
-            ${!u.avatarSmallUrl ? "?" : ""}
-          </div>
-          <div class="info">
-            <div class="username">${safeUsername}</div>
-            <div class="meta">${safeAge} ans · ${safeGender} · ${safeRole}</div>
-            <div class="location">${safeLocation}</div>
-          </div>
-        </a>
-      `;
+  <a href="${safeLink}" target="_blank" rel="noopener noreferrer" class="card">
+    <div class="avatar">?</div>
+    <div class="info">
+      <div class="username">${safeUsername}</div>
+      <div class="meta">${safeAge} ans · ${safeGender} · ${safeRole}</div>
+      <div class="location">${safeLocation}</div>
+    </div>
+  </a>
+`;
     }).join("");
 
     const html = `<!DOCTYPE html>
@@ -197,16 +206,14 @@
     }
 
     .avatar {
-      width: 100%;
-      aspect-ratio: 1;
-      background-size: cover;
-      background-position: center;
-      background-color: #0f3460;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 40px;
-      color: #555;
+  width: 100%;
+  aspect-ratio: 1;
+  background-color: #0f3460;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  color: #555;
     }
 
     .info {
@@ -299,9 +306,11 @@
 
     let users;
     try {
-      const html = await fetchPage(i);
-      users      = extractUsers(html);
-      consecutiveErrors = 0;
+     const html = await fetchPage(i);
+users = extractUsers(html);
+console.log("Nombre users bruts:", users.length);
+console.log("Premier user brut:", users[0]);
+consecutiveErrors = 0; 
     } catch (err) {
       totalErrors++;
       consecutiveErrors++;
